@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76394c33089742743be8ff3f0a714cd8, type: 3}
+  m_Name: WhiteBear
+  m_EditorClassIdentifier: 
+  petName: 
+  petID: 0
+  physObj: {fileID: 8790236682873526110, guid: 701dc21683150704a8fecf1e132cb503, type: 3}
+  animalType: 1
+  animalName: Bear
+  face: {fileID: 11400000, guid: e32761e8f24d0db4e9d6bde7cebe0ddb, type: 2}
+  color: {fileID: 11400000, guid: 06ff6560dc10f7d42bc0ca606b1f0606, type: 2}
+  colorName: White
+  headAccessory: {fileID: 11400000, guid: 43e2a2fd9d901344884192766900c787, type: 2}
+  faceAccessory: {fileID: 11400000, guid: 43e2a2fd9d901344884192766900c787, type: 2}
+  backAccessory: {fileID: 11400000, guid: 43e2a2fd9d901344884192766900c787, type: 2}
+  neckAccessory: {fileID: 11400000, guid: 43e2a2fd9d901344884192766900c787, type: 2}
+  glow: 0
+  special: 0
+  leftHand: {fileID: 11400000, guid: 43e2a2fd9d901344884192766900c787, type: 2}
+  rightHand: {fileID: 11400000, guid: 43e2a2fd9d901344884192766900c787, type: 2}
+  clothing: {fileID: 11400000, guid: c3dd53e55d8c6fa47aaef8f0804a8790, type: 2}
+  affections: []

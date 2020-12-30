@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11263bb74cb2cc94dbea5587028aa571, type: 3}
+  m_Name: 4x4
+  m_EditorClassIdentifier: 
+  roomSize: 4
+  floorObject: {fileID: 3819533187996574130, guid: 12d07fa9bdf6ee049822406b4229eda3,
+    type: 3}
+  wall1Object: {fileID: 4868254025411094000, guid: 4f49e80ede7eae14f8be1a522197d18c,
+    type: 3}
+  wall2Object: {fileID: 4776541027463558262, guid: 9a1d2fd9a4c61b14db16159032bb2926,
+    type: 3}
+  wall3Object: {fileID: 40592195050862426, guid: 13eae85c394f90e49a6744f937914d12,
+    type: 3}
+  physObj: {fileID: 3819533187996574130, guid: 12d07fa9bdf6ee049822406b4229eda3, type: 3}

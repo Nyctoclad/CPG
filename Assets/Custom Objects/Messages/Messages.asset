@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ab50a7b8ef88f1418d254c77186c57a, type: 3}
+  m_Name: Messages
+  m_EditorClassIdentifier: 
+  ErrorMessage: {fileID: 7866743100012819172, guid: 2566677c0016f934898f9da43b46c46b,
+    type: 3}
+  ConfirmMessage: {fileID: 5222553869159025970, guid: 4df2e58641e38ba4c95489b091b3d4a1,
+    type: 3}
+  InputMessage: {fileID: 7875924640771874677, guid: f8d9a00e8d91d07469ecabeddd158773,
+    type: 3}
+  errorTitle: {fileID: 0}
+  errorText: {fileID: 0}
+  confirmTitle: {fileID: 0}
+  confirmText: {fileID: 0}
+  input: {fileID: 0}
+  confirmButton: {fileID: 0}
+  inputButton: {fileID: 0}
