@@ -11,9 +11,9 @@ public class MainLandController : MonoBehaviour
     Vector3 middlePosition;
     PlayerInformation playerinfo;
     SwipeManager sm;
-    public bool press;
+    public bool press, moving, movingAble, crActive = false;
     bool traveling = false, travelingUp = false, travelingFront = false, travelingLeft = false, travelingRight = false;
-    public GameObject petScreen, landScreen, currentPet, activeMark, relationshipsScreen, friendsListSeparator, friendsScreen, furnitureScreen, fcb, pcb, bcb, confirmBox, friendsPetInfo, petHolder, backSection;
+    public GameObject petScreen, landScreen, currentPet, activeMark, relationshipsScreen, friendsListSeparator, friendsScreen, furnitureScreen, fcb, pcb, bcb, confirmBox, friendsPetInfo, petHolder, backSection, furnitureCancel, furnitureRotate, furnitureSet;
     public Text petName, type, color, friendPetName, friendPetType, friendPetColor;
     public List<GameObject> friendButtons;
     public Button friendsRequest, pendingFriends, friends, acceptAll, declineAll;
@@ -23,7 +23,7 @@ public class MainLandController : MonoBehaviour
     Vector3 originalFriendScreenLocation = new Vector3(), originalFurnitureScreenLocation = new Vector3(), newFurnitureScreenLocation = new Vector3(), travelposition = new Vector3();
     public InputField friendsSearchBar;
     public List<Transform> furnitureButtonHolders;
-    public GameObject furnitureButton, materialButton;
+    public GameObject furnitureButton, materialButton, moveableObject;
     RectTransform furnitureScreenPosition;
     HeightCheck heightCheck;
     public Vector3 frontLocation, topLocation, leftLocation, rightLocation;
@@ -48,7 +48,8 @@ public class MainLandController : MonoBehaviour
                 GameObject rezzedRoom = GameObject.Instantiate(room.physObj);
                 rezzedRoom.transform.localPosition = room.location;
                 rezzedRoom.transform.localRotation = room.rotation;
-                GameObject tempWall1 = new GameObject(), tempWall2 = new GameObject(), tempWall3 = new GameObject(), tempFloor = new GameObject();
+                GameObject tempWall1 = new GameObject(), tempWall2 = new GameObject(), tempWall3 = new GameObject(), tempFloor = new GameObject(), furnitureMover = new GameObject();
+            
                 foreach(Transform child in rezzedRoom.transform){
                     if(child.gameObject.name == "GridFloor"){
                         child.gameObject.GetComponent<MeshRenderer>().material = room.floor.material;
@@ -71,6 +72,11 @@ public class MainLandController : MonoBehaviour
                         if(r == null)
                             Debug.Log("R is null. No R there.");
                         else   Debug.Log("R is not null");
+
+                        foreach(Transform fm in rezzedRoom.transform)
+                            if(fm.gameObject.tag == "mover")
+                                r.furnitureMover = fm.gameObject;
+                        
                         r.defaultRoom = room.defaultRoom;
                         r.floor = room.floor;
                         r.floorObject = room.floorObject;
@@ -118,7 +124,12 @@ public class MainLandController : MonoBehaviour
         }
 
         if(furnitureScreen.activeSelf && Input.GetMouseButton(0) && !traveling){
-            TouchToLowerCheck();
+            if (TouchToLowerCheck().tag.Contains("furniture") && movingAble){
+                Debug.Log("Able to move this furniture item.");
+                movingAble = false;
+                moving = true;
+
+            }
         }
 
         if(traveling){
@@ -181,24 +192,37 @@ public class MainLandController : MonoBehaviour
                 placedFurniture.transform.rotation = new Quaternion(0,0,0,0);
                 placedFurniture.transform.localRotation = new Quaternion(0,0,0,0);
                 placedFurniture.transform.localRotation = Quaternion.Euler(furniture.rotation);
+                FurnitureMove fm = placedFurniture.AddComponent<FurnitureMove>();
+                foreach(GameObject r in GameObject.FindGameObjectsWithTag("roombox")){
+                    if(r.GetComponent<Room>().roomID == furniture.roomID){
+                        fm.bounds = r.GetComponent<Room>().floorObject.GetComponent<MeshRenderer>().bounds;
+                        fm.furniture = furniture;
+                    }
+                }
             }
         }
     }
 
-    void TouchToLowerCheck(){
+    GameObject TouchToLowerCheck(){
         //Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         //RaycastHit2D hit = Physics2D.Raycast(ray.origin, ray.direction);
         RaycastHit hit;
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        GameObject item = new GameObject();
 
         if(Physics.Raycast(ray, out hit)){
             GameObject tempObject;
             if(hit.collider != null){
-                Debug.Log("Hit: " + hit.collider.gameObject.name);
+               // Debug.Log("Hit: " + hit.collider.gameObject.name);
                 tempObject = hit.collider.gameObject;
                 if(tempObject.name == "BackSwipeSection" && !heightCheck.down){
                     //Debug.Log("Touched back swipe section.");
                     //StartCoroutine(travel(newFurnitureScreenLocation));
+                    if(crActive){
+                        furnitureCancel.SetActive(true);
+                        furnitureRotate.SetActive(true);
+                        furnitureSet.SetActive(true);
+                    }
                     travelposition = newFurnitureScreenLocation;
                     heightCheck.down = true;
                     traveling = true;
@@ -209,13 +233,24 @@ public class MainLandController : MonoBehaviour
                     //StartCoroutine(travel(originalFurnitureScreenLocation));
                     backSection.SetActive(true);
                     travelposition = originalFurnitureScreenLocation;
+                    if(crActive){
+                        furnitureCancel.SetActive(false);
+                        furnitureRotate.SetActive(false);
+                        furnitureSet.SetActive(false);
+                    }
                     heightCheck.down = false;
                     traveling = true;
                 }
+
+                item = tempObject;
+
+
             }
 
             
         }
+
+        return item;
     }
 
     public void SeeScreen(){
@@ -223,6 +258,13 @@ public class MainLandController : MonoBehaviour
         heightCheck.down = true;
         traveling = true;
         backSection.SetActive(false);
+    }
+              
+    public void HideScreen(){
+        travelposition = originalFurnitureScreenLocation;
+        heightCheck.down = false;
+        traveling = true;
+        backSection.SetActive(true);
     }
 
     void SwipeCheck(){
@@ -463,152 +505,169 @@ public class MainLandController : MonoBehaviour
 
     public void SetFurnitureList(){
         furnitureScreen.SetActive(true);
+        Room room = new Room();
+        foreach(GameObject r in GameObject.FindGameObjectsWithTag("roombox")){
+            if(r.GetComponent<Room>().active){
+                room = r.GetComponent<Room>();
+                break;
+            }
+        }
+        foreach(Transform furnitureHolder in furnitureButtonHolders){
+            Debug.Log("Furniture holder being examined: " + furnitureHolder.gameObject.name + " has " + furnitureHolder.childCount + " children.");
+            foreach(Transform child in furnitureHolder){
+                Debug.Log("Button " + child.gameObject.name + " destroyed.");
+                GameObject.Destroy(child.gameObject);
+            }
+        }
 
         foreach(Furniture furniture in player.furniture){
             Transform holder;
             Debug.Log("Furniture is " + furniture.furnitureName + " and type is " + furniture.furnitureType);
-            
             if(!furniture.placed){
-                if(furniture.furnitureType == 1){
-                    //Walls
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("walls")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(materialButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.material, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("MaterialHolder"));
-                            break;
-                        }
-                    }
-
+                GameObject button = new GameObject(), icon = new GameObject();
+                switch(furniture.furnitureType){
                     
+                    case 1:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("walls")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(materialButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.material, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("MaterialHolder"));
 
-                }
-                else if(furniture.furnitureType == 2){
-                    //Floors
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("floor")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(materialButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.material, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("MaterialHolder"));
-                            break;
+                                break;
+                            }
                         }
-                    }
-                }
-                else if(furniture.furnitureType == 3){
-                    //Tables
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("table")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
-                            break;
+                    break;
+
+                    case 2:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("floor")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(materialButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.material, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("MaterialHolder"));
+                                break;
+                            }
                         }
-                    }
-                }
-                else if(furniture.furnitureType == 4){
-                    //Chairs
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("chair")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
-                            break;
+                    break;
+
+                    case 3:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("table")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
+                                break;
+                            }
                         }
-                    }
-                }
-                else if(furniture.furnitureType == 5){
-                    //Beds
-                    Debug.Log("THIS IS A BED.");
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        Debug.Log("This holder holds " + furnitureHolder.parent.gameObject.name);
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("bed")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            button.transform.localPosition = new Vector3(button.transform.localPosition.x, button.transform.localPosition.y, -60);
-                            button.gameObject.GetComponent<FurniturePlacement>().furniture = furniture;
-                            GameObject icon = GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
-                            icon.transform.localPosition = new Vector3(0,0,0);
-                            break;
+                    break;
+
+                    case 4:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("chair")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
+                                break;
+                            }
                         }
-                    }
-                }
-                else if(furniture.furnitureType == 6){
-                    //Storage
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("storage")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
-                            break;
+                    break;
+
+                    case 5:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("bed")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                button.transform.localPosition = new Vector3(button.transform.localPosition.x, button.transform.localPosition.y, -60);
+                                button.gameObject.GetComponent<FurniturePlacement>().furniture = furniture;
+                                icon = GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
+                                icon.transform.localPosition = new Vector3(0,0,0);
+                                break;
+                            }
                         }
-                    }
-                }
-                else if(furniture.furnitureType == 7){
-                    //Bath
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("bath")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
-                            break;
+                    break;
+
+                    case 6:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("storage")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
+                                break;
+                            }
                         }
-                    }
-                }
-                else if(furniture.furnitureType == 8){
-                    //Kitchen
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("kitchen")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
-                            break;
+                    break;
+
+                    case 7:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("bath")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
+                                break;
+                            }
                         }
-                    }
-                }
-                else if(furniture.furnitureType == 9){
-                    //Electronics
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("electronics")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
-                            break;
+                    break;
+
+                    case 8:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("kitchen")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
+                                break;
+                            }
                         }
-                    }
-                }
-                else if(furniture.furnitureType == 10){
-                    //Lighting
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("light")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
-                            break;
+                    break;
+
+                    case 9:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("electronics")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
+                                break;
+                            }
                         }
-                    }
-                }
-                else if(furniture.furnitureType == 11){
-                    //Wall Decorations
-                    foreach(Transform furnitureHolder in furnitureButtonHolders){
-                        if(furnitureHolder.parent.gameObject.name.ToLower().Contains("wall deco")){
-                            //Use a material button
-                            holder = furnitureHolder;
-                            GameObject button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
-                            GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
-                            break;
+                    break;
+                    
+                    case 10:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("light")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
+                                break;
+                            }
                         }
-                    }
+                    break;
+
+                    case 11:
+                        foreach(Transform furnitureHolder in furnitureButtonHolders){
+                            if(furnitureHolder.parent.gameObject.name.ToLower().Contains("wall deco")){
+                                //Use a material button
+                                holder = furnitureHolder;
+                                button = GameObject.Instantiate(furnitureButton, new Vector3(0,0,0), new Quaternion(0,0,0,0), holder);
+                                GameObject.Instantiate(furniture.icon, new Vector3(0,0,0), new Quaternion(0,0,0,0), button.transform.Find("FurnitureHolder"));
+                                break;
+                            }
+                        }
+                    break;
                 }
+                if(button.GetComponent<Button>() != null){
+                    button.GetComponent<Button>().onClick.RemoveAllListeners();
+                    button.GetComponent<Button>().onClick.AddListener(() => room.RezFurniture(furniture, button.GetComponent<Button>()));
+                }
+
             }
         }
     }

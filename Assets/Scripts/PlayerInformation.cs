@@ -11,6 +11,7 @@ public class PlayerInformation : MonoBehaviour
     public Messages messages;
     public SurfaceMaterials surfaceMaterials;
     public List<RoomSize> roomObjects = new List<RoomSize>();
+    public TagList furnitureTags, roomTags;
 
     
     // Start is called before the first frame update
@@ -112,5 +113,9 @@ public class PlayerInformation : MonoBehaviour
         body.material = player.pets[petIndex].color.animalMaterial;
         face.material = player.pets[petIndex].face.face;
         return pet;
+    }
+
+    public void Save(){
+        
     }
 }

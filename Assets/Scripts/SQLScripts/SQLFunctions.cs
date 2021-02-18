@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -95,6 +95,37 @@ public class SQLFunctions : MonoBehaviour
         StartCoroutine(RetrieveRoomsEnum());
     }
 
+    public void SubmitFurniture(double uniqueFurnitureID, string furnitureID, string furnitureColorID, string location, string rotation, int roomID){
+        StartCoroutine(SubmitFurnitureEnum(uniqueFurnitureID, furnitureID, furnitureColorID, location, rotation, roomID));
+    }
+
+    IEnumerator SubmitFurnitureEnum(double uniqueFurnitureID, string furnitureID, string furnitureColorID, string location, string rotation, int roomID){
+        WWWForm form = new WWWForm();
+        UnityWebRequest wwwSubmitFurniture;
+        Debug.Log("Passing location as: " + location);
+        form.AddField("userid", player.userID.ToString());
+        form.AddField("uniquefurnitureid", uniqueFurnitureID.ToString());
+        form.AddField("furnitureid", furnitureID);
+        form.AddField("furniturecolorid", furnitureColorID);
+        form.AddField("location", location);
+        form.AddField("rotation", rotation);
+        form.AddField("roomid", roomID);
+
+        using(wwwSubmitFurniture = UnityWebRequest.Post(url + "SubmitFurniture.php", form)){
+            yield return wwwSubmitFurniture.SendWebRequest();
+            if(wwwSubmitFurniture.isNetworkError || wwwSubmitFurniture.isHttpError){
+                Debug.Log(wwwSubmitFurniture.error);
+                playerinfo.messages.ErrorMessage.SetActive(true);
+                playerinfo.messages.errorTitle.text = "Network Error";
+                playerinfo.messages.errorText.text = "Cannot save furniture location.";
+            }
+                
+            else{
+               Debug.Log(wwwSubmitFurniture.downloadHandler.text);
+            }
+        }
+    }
+
     IEnumerator RetrieveRoomsEnum(){
         UnityWebRequest wwwRetrieveRooms;
         WWWForm form = new WWWForm();
@@ -102,8 +133,10 @@ public class SQLFunctions : MonoBehaviour
 
         using(wwwRetrieveRooms = UnityWebRequest.Post(url + "RetrieveRooms.php", form)){
             yield return wwwRetrieveRooms.SendWebRequest();
-            if(wwwRetrieveRooms.isNetworkError)
+            if(wwwRetrieveRooms.isNetworkError){
                 Debug.Log(wwwRetrieveRooms.error);
+                ShowError(wwwRetrieveRooms.error);
+                }
             else{
                 Debug.Log(wwwRetrieveRooms.downloadHandler.text);
 
@@ -160,7 +193,7 @@ public class SQLFunctions : MonoBehaviour
                         Debug.Log("ZLOC: " + zloc);
                         
                         room.location = new Vector3(xloc, yloc, zloc);
-                        
+                        room.roomID = int.Parse(line.Split(',')[8]);
                         player.rooms.Add(room);
                     }
 
@@ -184,8 +217,10 @@ public class SQLFunctions : MonoBehaviour
 
         using(wwwRetrieveFurniture = UnityWebRequest.Post(url + "RetrieveFurniture.php", form)){
             yield return wwwRetrieveFurniture.SendWebRequest();
-            if(wwwRetrieveFurniture.isNetworkError)
+            if(wwwRetrieveFurniture.isNetworkError){
                 Debug.Log(wwwRetrieveFurniture.error);
+                ShowError(wwwRetrieveFurniture.error);
+            }
             else{
                 Debug.Log(wwwRetrieveFurniture.downloadHandler.text);
                 string[] lines = wwwRetrieveFurniture.downloadHandler.text.Split(';');
@@ -193,6 +228,7 @@ public class SQLFunctions : MonoBehaviour
                     if(!(string.IsNullOrEmpty(line) || string.IsNullOrWhiteSpace(line))){
                         Furniture furniture = new Furniture();
                         furniture.furnitureID = int.Parse(line.Split(',')[0]);
+                        furniture.uniqueFurnitureID = double.Parse(line.Split(',')[4]);
                         furniture.furnitureColorID = int.Parse(line.Split(',')[1]);
                         foreach(Furniture f in furnitureList.furniture){
                             if(f.furnitureID == furniture.furnitureID){
@@ -245,14 +281,17 @@ public class SQLFunctions : MonoBehaviour
 
         using(wwwRetrieveFurniture = UnityWebRequest.Post(url + "RetrieveFurniture.php", form)){
             yield return wwwRetrieveFurniture.SendWebRequest();
-            if(wwwRetrieveFurniture.isNetworkError)
+            if(wwwRetrieveFurniture.isNetworkError){
                 Debug.Log(wwwRetrieveFurniture.error);
+                ShowError(wwwRetrieveFurniture.error);
+            }
             else{
                 Debug.Log(wwwRetrieveFurniture.downloadHandler.text);
                 string[] lines = wwwRetrieveFurniture.downloadHandler.text.Split(';');
                 foreach(string line in lines){
                     if(!(string.IsNullOrEmpty(line) || string.IsNullOrWhiteSpace(line))){
                         Furniture furniture = new Furniture();
+                        furniture.uniqueFurnitureID = double.Parse(line.Split(',')[4]);
                         furniture.furnitureID = int.Parse(line.Split(',')[0]);
                         furniture.furnitureColorID = int.Parse(line.Split(',')[1]);
                         foreach(Furniture f in furnitureList.furniture){
@@ -307,8 +346,10 @@ public class SQLFunctions : MonoBehaviour
 
         using(wwwUpdateFriends = UnityWebRequest.Post(url + "UpdateFriends.php", form)){
             yield return wwwUpdateFriends.SendWebRequest();
-            if(wwwUpdateFriends.isNetworkError)
+            if(wwwUpdateFriends.isNetworkError){
                 Debug.Log(wwwUpdateFriends.error);
+                ShowError(wwwUpdateFriends.error);
+            }
             else{
                // Debug.Log(wwwUpdateFriends.downloadHandler.text);
 
@@ -333,8 +374,10 @@ public class SQLFunctions : MonoBehaviour
 
             using(wwwRetrieveFriendsUserInfo = UnityWebRequest.Post(url + "RetrieveUser.php", form)){
                 yield return wwwRetrieveFriendsUserInfo.SendWebRequest();
-                if(wwwRetrieveFriendsUserInfo.isNetworkError)
+                if(wwwRetrieveFriendsUserInfo.isNetworkError){
                     Debug.Log(wwwRetrieveFriendsUserInfo.error);
+                    ShowError(wwwRetrieveFriendsUserInfo.error);
+                }
                 else{
                   //  Debug.Log(wwwRetrieveFriendsUserInfo.downloadHandler.text);
 
@@ -348,8 +391,10 @@ public class SQLFunctions : MonoBehaviour
                     UnityWebRequest wwwRetrievePet;
                     using(wwwRetrievePet = UnityWebRequest.Post(url + "RetrievePet.php", form)){
                         yield return wwwRetrievePet.SendWebRequest();
-                        if(wwwRetrievePet.isNetworkError)
+                        if(wwwRetrievePet.isNetworkError){
                             Debug.Log(wwwRetrievePet.error);
+                            ShowError(wwwRetrievePet.error);
+                        }
                         else{
                    //         Debug.Log(wwwRetrievePet.downloadHandler.text);
 
@@ -433,8 +478,10 @@ public class SQLFunctions : MonoBehaviour
 
             using(wwwRetrieveFriendsUserInfo = UnityWebRequest.Post(url + "RetrieveUser.php", form)){
                 yield return wwwRetrieveFriendsUserInfo.SendWebRequest();
-                if(wwwRetrieveFriendsUserInfo.isNetworkError)
+                if(wwwRetrieveFriendsUserInfo.isNetworkError){
                     Debug.Log(wwwRetrieveFriendsUserInfo.error);
+                    ShowError(wwwRetrieveFriendsUserInfo.error);
+                }
                 else{
                   //  Debug.Log(wwwRetrieveFriendsUserInfo.downloadHandler.text);
 
@@ -448,8 +495,10 @@ public class SQLFunctions : MonoBehaviour
                     UnityWebRequest wwwRetrievePet;
                     using(wwwRetrievePet = UnityWebRequest.Post(url + "RetrievePet.php", form)){
                         yield return wwwRetrievePet.SendWebRequest();
-                        if(wwwRetrievePet.isNetworkError)
+                        if(wwwRetrievePet.isNetworkError){
                             Debug.Log(wwwRetrievePet.error);
+                            ShowError(wwwRetrievePet.error);
+                        }
                         else{
                            // Debug.Log(wwwRetrievePet.downloadHandler.text);
 
@@ -535,8 +584,10 @@ public class SQLFunctions : MonoBehaviour
 
             using(wwwRetrieveFriendsUserInfo = UnityWebRequest.Post(url + "RetrieveUser.php", form)){
                 yield return wwwRetrieveFriendsUserInfo.SendWebRequest();
-                if(wwwRetrieveFriendsUserInfo.isNetworkError)
+                if(wwwRetrieveFriendsUserInfo.isNetworkError){
                     Debug.Log(wwwRetrieveFriendsUserInfo.error);
+                    ShowError(wwwRetrieveFriendsUserInfo.error);
+                }
                 else{
                    // Debug.Log(wwwRetrieveFriendsUserInfo.downloadHandler.text);
 
@@ -550,8 +601,10 @@ public class SQLFunctions : MonoBehaviour
                     UnityWebRequest wwwRetrievePet;
                     using(wwwRetrievePet = UnityWebRequest.Post(url + "RetrievePet.php", form)){
                         yield return wwwRetrievePet.SendWebRequest();
-                        if(wwwRetrievePet.isNetworkError)
+                        if(wwwRetrievePet.isNetworkError){
                             Debug.Log(wwwRetrievePet.error);
+                            ShowError(wwwRetrievePet.error);
+                        }
                         else{
                           //  Debug.Log(wwwRetrievePet.downloadHandler.text);
 
@@ -635,8 +688,10 @@ public class SQLFunctions : MonoBehaviour
 
             using(wwwRetrieveFriendsUserInfo = UnityWebRequest.Post(url + "RetrieveUser.php", form)){
                 yield return wwwRetrieveFriendsUserInfo.SendWebRequest();
-                if(wwwRetrieveFriendsUserInfo.isNetworkError)
+                if(wwwRetrieveFriendsUserInfo.isNetworkError){
                     Debug.Log(wwwRetrieveFriendsUserInfo.error);
+                    ShowError(wwwRetrieveFriendsUserInfo.error);
+                }
                 else{
                    // Debug.Log(wwwRetrieveFriendsUserInfo.downloadHandler.text);
 
@@ -668,8 +723,10 @@ public class SQLFunctions : MonoBehaviour
 
         using(wwwRetrieveFriends = UnityWebRequest.Post(url + "RetrieveFriends.php", form)){
             yield return wwwRetrieveFriends.SendWebRequest();
-            if(wwwRetrieveFriends.isNetworkError)
+            if(wwwRetrieveFriends.isNetworkError){
                 Debug.Log(wwwRetrieveFriends.error);
+                ShowError(wwwRetrieveFriends.error);
+            }
             else{
                 //Debug.Log(wwwRetrieveFriends.downloadHandler.text);
 
@@ -743,8 +800,10 @@ public class SQLFunctions : MonoBehaviour
 
         using(wwwRetrievePet = UnityWebRequest.Post(url + "RetrievePet.php", form)){
             yield return wwwRetrievePet.SendWebRequest();
-            if(wwwRetrievePet.isNetworkError)
+            if(wwwRetrievePet.isNetworkError){
                 Debug.Log(wwwRetrievePet.error);
+                ShowError(wwwRetrievePet.error);
+            }
             else{
                // Debug.Log(wwwRetrievePet.downloadHandler.text);
 
@@ -828,8 +887,10 @@ public class SQLFunctions : MonoBehaviour
 
         using(wwwRetrieveUser = UnityWebRequest.Post(url + "RetrieveUser.php", form)){
             yield return wwwRetrieveUser.SendWebRequest();
-            if(wwwRetrieveUser.isNetworkError)
+            if(wwwRetrieveUser.isNetworkError){
                 Debug.Log(wwwRetrieveUser.error);
+                ShowError(wwwRetrieveUser.error);
+            }
             else{
                 Debug.Log(wwwRetrieveUser.downloadHandler.text);
 
@@ -851,8 +912,10 @@ public class SQLFunctions : MonoBehaviour
 
         using(wwwUserCheck = UnityWebRequest.Post(url + "CheckUser.php", form)){
             yield return wwwUserCheck.SendWebRequest();
-            if(wwwUserCheck.isNetworkError)
+            if(wwwUserCheck.isNetworkError){
                 Debug.Log(wwwUserCheck.error);
+                ShowError(wwwUserCheck.error);
+            }
             else{
                 //Debug.Log(wwwUserCheck.downloadHandler.text);
 
@@ -867,6 +930,7 @@ public class SQLFunctions : MonoBehaviour
                 },
                 result => Debug.Log("Successfully updated user data"),
                 error => {
+                    ShowError("Error creating account.");
                     Debug.Log("Error creating account.");
                     Debug.Log(error.GenerateErrorReport());
                 });
@@ -967,6 +1031,39 @@ public class SQLFunctions : MonoBehaviour
             
                     
                 }
+            }
+        }
+    }
+
+    public void ShowError(string errorMessage, string errorTitle = "Error"){
+        GameObject errorObject = GameObject.Instantiate(playerinfo.messages.ErrorMessage);
+        playerinfo.messages.ErrorMessage.SetActive(true);
+        playerinfo.messages.errorTitle.text = "Error";
+        playerinfo.messages.errorText.text = errorMessage;
+    }
+
+    public void CheckConnection(){
+        StartCoroutine(test());
+    }
+
+    IEnumerator test(){
+        WWWForm form = new WWWForm();
+        LogIn login = GameObject.FindGameObjectWithTag("scriptholder").GetComponent<LogIn>();
+        using(UnityWebRequest www = UnityWebRequest.Post(url + "TestConnection.php", form)){
+            yield return www.SendWebRequest();
+            if(www.isNetworkError){
+                Debug.Log(www.error);
+                ShowError(www.error);
+            }
+            else{
+                Debug.Log(www.downloadHandler.text);
+                if(www.downloadHandler.text.Contains("Warning")){
+                    Debug.Log(www.downloadHandler.text);
+                    ShowError("Could not connect to server. Please try again later.");
+                    login.mainMenu.SetActive(true);
+                }
+                else
+                    login.SignIn();
             }
         }
     }

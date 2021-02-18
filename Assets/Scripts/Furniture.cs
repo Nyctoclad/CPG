@@ -5,11 +5,12 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Custom Assets/Furniture")]
 public class Furniture : ScriptableObject
 {
+    public double uniqueFurnitureID;
     public float furnitureID;
     public string furnitureName;
     public float furnitureColorID;
     public string colorName;
-    public int furnitureType;
+    public int furnitureType, roomID;
     public Material material;
     public GameObject physObj;
     public GameObject icon;

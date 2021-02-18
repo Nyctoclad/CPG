@@ -29,6 +29,7 @@ public class TestConnection : MonoBehaviour
             yield return www.SendWebRequest();
             if(www.isNetworkError)
                 Debug.Log(www.error);
+                
             else{
                 Debug.Log(www.downloadHandler.text);
             }

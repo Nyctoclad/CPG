@@ -29,6 +29,13 @@ TagManager:
   - content
   - downswipe
   - roombox
+  - furniture:wall
+  - furniture:floor_bed
+  - mover
+  - wall
+  - floor
+  - ceiling
+  - furniturepage
   layers:
   - Default
   - TransparentFX

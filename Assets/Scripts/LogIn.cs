@@ -9,10 +9,11 @@ using PlayFab.ClientModels;
 public class LogIn : MonoBehaviour
 {
     public Player player;
-    public GameObject displayNameContainer, errorContainer, confirmContainer;
+    public PlayerInformation playerInfo;
+    public GameObject displayNameContainer, errorContainer, confirmContainer, mainMenu;
     public InputField dnInput;
     public Text errorText;
-
+    SQLFunctions sqf;
     public TemporaryAccount tempAccount;
 
 
@@ -22,7 +23,9 @@ public class LogIn : MonoBehaviour
 
         Debug.Log("The player object is " + GameObject.FindGameObjectWithTag("playerinfo").GetComponent<PlayerInformation>().player.displayName);
 
-        player = GameObject.FindGameObjectWithTag("playerinfo").GetComponent<PlayerInformation>().player;
+        playerInfo = GameObject.FindGameObjectWithTag("playerinfo").GetComponent<PlayerInformation>();
+        sqf = playerInfo.GetComponent<SQLFunctions>();
+        player = playerInfo.player;
     }
 
     // Update is called once per frame
@@ -48,6 +51,10 @@ public class LogIn : MonoBehaviour
         //Attempt to login user
         Debug.Log("Failure!");
         Debug.Log(error);
+    }
+
+    public void TestDatabaseConnection(){
+        sqf.CheckConnection();
     }
 
     public void SignIn(){
@@ -127,6 +134,7 @@ public class LogIn : MonoBehaviour
                     else if(player.loggedIn){
                         Debug.Log("Player has logged in before");
                         SQLFunctions sqf = GameObject.FindGameObjectWithTag("playerinfo").GetComponent<SQLFunctions>();
+                        
                         sqf.RetrieveUser();
                         sqf.RetrievePet();
                         sqf.RetriveRooms();
